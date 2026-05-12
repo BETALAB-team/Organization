@@ -1611,6 +1611,55 @@ def update_meeting_purpose(
 
     return purpose
 
+@router.delete("/meetings/{meeting_id}")
+def delete_meeting(
+    meeting_id: str,
+    db: Session = Depends(get_db),
+):
+    meeting = (
+        db.query(Meeting)
+        .filter(Meeting.id == meeting_id, Meeting.archived == False)
+        .first()
+    )
+
+    if meeting is None:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    meeting.archived = True
+    meeting.updated_at = datetime.utcnow()
+
+    db.commit()
+
+    return {"status": "deleted"}
+
+@router.put("/meetings/{meeting_id}")
+def update_meeting(
+    meeting_id: str,
+    payload: MeetingCreate,
+    db: Session = Depends(get_db),
+):
+    meeting = (
+        db.query(Meeting)
+        .filter(Meeting.id == meeting_id, Meeting.archived == False)
+        .first()
+    )
+
+    if meeting is None:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    meeting.title = payload.title
+    meeting.meeting_type_id = payload.meeting_type_id
+    meeting.organizer_person_id = payload.organizer_person_id
+    meeting.meeting_date = payload.meeting_date
+    meeting.start_time = payload.start_time
+    meeting.end_time_optional = payload.end_time_optional
+    meeting.description_optional = payload.description_optional
+    meeting.updated_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(meeting)
+
+    return meeting
 
 @router.delete("/meeting-purposes/{purpose_id}")
 def delete_meeting_purpose(purpose_id: str, db: Session = Depends(get_db)):

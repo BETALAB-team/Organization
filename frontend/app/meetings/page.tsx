@@ -11,6 +11,7 @@ import {
   createMeeting,
   createMeetingSlot,
   confirmMeetingSlot,
+  deleteMeeting,
   getActivities,
   getMeetingPurposes,
   getMeetings,
@@ -22,6 +23,7 @@ import {
   Person,
   releaseMeetingSlot,
   takeMeetingSlot,
+  updateMeeting,
 } from "@/lib/api";
 
 type MeetingFormState = {
@@ -91,6 +93,8 @@ export default function MeetingsPage() {
   const [detailOpen, setDetailOpen] = useState(false);
 
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
+
   const [meetingForm, setMeetingForm] = useState<MeetingFormState>(emptyMeetingForm);
   const [slotForm, setSlotForm] = useState<SlotFormState>(emptySlotForm);
   const [takeSlotForm, setTakeSlotForm] = useState<TakeSlotFormState>(emptyTakeSlotForm);
@@ -154,12 +158,33 @@ export default function MeetingsPage() {
   }
 
   function openCreateMeeting() {
+    setEditingMeeting(null);
     setMeetingForm({
       ...emptyMeetingForm,
       meeting_type_id: meetingTypes[0]?.id || "",
       organizer_person_id: people[0]?.id || "",
     });
     setMeetingFormOpen(true);
+  }
+
+  function openEditMeeting(meeting: Meeting) {
+    setEditingMeeting(meeting);
+    setMeetingForm({
+      title: meeting.title || "",
+      meeting_type_id: meeting.meeting_type_id || "",
+      organizer_person_id: meeting.organizer_person_id || "",
+      meeting_date: meeting.meeting_date || "",
+      start_time: meeting.start_time || "",
+      end_time_optional: meeting.end_time_optional || "",
+      description_optional: meeting.description_optional || "",
+    });
+    setMeetingFormOpen(true);
+  }
+
+  function closeMeetingForm() {
+    setMeetingFormOpen(false);
+    setEditingMeeting(null);
+    setMeetingForm(emptyMeetingForm);
   }
 
   function openCreateSlot(meeting: Meeting) {
@@ -182,13 +207,13 @@ export default function MeetingsPage() {
     setTakeSlotFormOpen(true);
   }
 
-  async function handleCreateMeeting(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSaveMeeting(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     try {
       setError("");
 
-      await createMeeting({
+      const payload = {
         title: meetingForm.title,
         meeting_type_id: meetingForm.meeting_type_id,
         organizer_person_id: meetingForm.organizer_person_id,
@@ -196,12 +221,46 @@ export default function MeetingsPage() {
         start_time: meetingForm.start_time,
         end_time_optional: meetingForm.end_time_optional || null,
         description_optional: meetingForm.description_optional || null,
-      });
+      };
 
-      setMeetingFormOpen(false);
+      if (editingMeeting) {
+        await updateMeeting(editingMeeting.id, payload);
+      } else {
+        await createMeeting(payload);
+      }
+
+      closeMeetingForm();
       await loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create meeting.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : editingMeeting
+            ? "Failed to update meeting."
+            : "Failed to create meeting."
+      );
+    }
+  }
+
+  async function handleDeleteMeeting(meeting: Meeting) {
+    const confirmed = window.confirm(`Delete meeting "${meeting.title}"?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setError("");
+      await deleteMeeting(meeting.id);
+
+      if (selectedMeeting?.id === meeting.id) {
+        setSelectedMeeting(null);
+        setDetailOpen(false);
+      }
+
+      await loadAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete meeting.");
     }
   }
 
@@ -300,73 +359,91 @@ export default function MeetingsPage() {
           Loading meetings...
         </div>
       ) : (
-        <DataTable<Meeting>
-          data={filteredMeetings}
-          emptyMessage="No meetings found."
-          columns={[
-            {
-              key: "title",
-              header: "Title",
-              render: (meeting) => (
-                <button
-                  onClick={() => {
-                    setSelectedMeeting(meeting);
-                    setDetailOpen(true);
-                  }}
-                  className="font-medium text-[#E16000] hover:underline"
-                >
-                  {meeting.title}
-                </button>
-              ),
-            },
-            {
-              key: "meeting_type_name",
-              header: "Type",
-              render: (meeting) => meeting.meeting_type_name || "-",
-            },
-            {
-              key: "meeting_date",
-              header: "Date",
-              render: (meeting) => meeting.meeting_date,
-            },
-            {
-              key: "start_time",
-              header: "Time",
-              render: (meeting) =>
-                `${meeting.start_time}${meeting.end_time_optional ? `-${meeting.end_time_optional}` : ""}`,
-            },
-            {
-              key: "organizer_name",
-              header: "Organizer",
-              render: (meeting) => meeting.organizer_name || "-",
-            },
-            {
-              key: "slots",
-              header: "Slots",
-              render: (meeting) => `${meeting.slots.length}`,
-            },
-            {
-              key: "actions",
-              header: "Actions",
-              render: (meeting) => (
-                <button
-                  onClick={() => openCreateSlot(meeting)}
-                  className="rounded-lg border border-gray-300 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                >
-                  Add slot
-                </button>
-              ),
-            },
-          ]}
-        />
+        <div className="overflow-x-auto">
+          <DataTable<Meeting>
+            data={filteredMeetings}
+            emptyMessage="No meetings found."
+            columns={[
+              {
+                key: "title",
+                header: "Title",
+                render: (meeting) => (
+                  <button
+                    onClick={() => {
+                      setSelectedMeeting(meeting);
+                      setDetailOpen(true);
+                    }}
+                    className="font-medium text-[#E16000] hover:underline"
+                  >
+                    {meeting.title}
+                  </button>
+                ),
+              },
+              {
+                key: "meeting_type_name",
+                header: "Type",
+                render: (meeting) => meeting.meeting_type_name || "-",
+              },
+              {
+                key: "meeting_date",
+                header: "Date",
+                render: (meeting) => meeting.meeting_date,
+              },
+              {
+                key: "start_time",
+                header: "Time",
+                render: (meeting) =>
+                  `${meeting.start_time}${meeting.end_time_optional ? `-${meeting.end_time_optional}` : ""}`,
+              },
+              {
+                key: "organizer_name",
+                header: "Organizer",
+                render: (meeting) => meeting.organizer_name || "-",
+              },
+              {
+                key: "slots",
+                header: "Slots",
+                render: (meeting) => `${meeting.slots.length}`,
+              },
+              {
+                key: "actions",
+                header: "Actions",
+                render: (meeting) => (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => openCreateSlot(meeting)}
+                      className="rounded-lg border border-gray-300 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                    >
+                      Add slot
+                    </button>
+
+                    <button
+                      onClick={() => openEditMeeting(meeting)}
+                      className="rounded-lg border border-gray-300 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteMeeting(meeting)}
+                      className="rounded-lg border border-red-300 px-3 py-1 text-xs text-red-700 hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </div>
       )}
 
       <FormModal
         open={meetingFormOpen}
-        title="Create meeting"
-        onClose={() => setMeetingFormOpen(false)}
+        title={editingMeeting ? "Edit meeting" : "Create meeting"}
+        onClose={closeMeetingForm}
       >
-        <form onSubmit={handleCreateMeeting} className="space-y-4">
+        <form onSubmit={handleSaveMeeting} className="space-y-4">
           <input
             value={meetingForm.title}
             onChange={(event) => setMeetingForm({ ...meetingForm, title: event.target.value })}
@@ -451,11 +528,19 @@ export default function MeetingsPage() {
           />
 
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={() => setMeetingFormOpen(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm">
+            <button
+              type="button"
+              onClick={closeMeetingForm}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm"
+            >
               Cancel
             </button>
-            <button type="submit" className="rounded-lg bg-[#E16000] px-4 py-2 text-sm font-medium text-white">
-              Save
+
+            <button
+              type="submit"
+              className="rounded-lg bg-[#E16000] px-4 py-2 text-sm font-medium text-white"
+            >
+              {editingMeeting ? "Save changes" : "Save"}
             </button>
           </div>
         </form>
@@ -482,10 +567,18 @@ export default function MeetingsPage() {
           </div>
 
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={() => setSlotFormOpen(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm">
+            <button
+              type="button"
+              onClick={() => setSlotFormOpen(false)}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm"
+            >
               Cancel
             </button>
-            <button type="submit" className="rounded-lg bg-[#E16000] px-4 py-2 text-sm font-medium text-white">
+
+            <button
+              type="submit"
+              className="rounded-lg bg-[#E16000] px-4 py-2 text-sm font-medium text-white"
+            >
               Save slot
             </button>
           </div>
@@ -569,10 +662,18 @@ export default function MeetingsPage() {
           />
 
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={() => setTakeSlotFormOpen(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm">
+            <button
+              type="button"
+              onClick={() => setTakeSlotFormOpen(false)}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm"
+            >
               Cancel
             </button>
-            <button type="submit" className="rounded-lg bg-[#E16000] px-4 py-2 text-sm font-medium text-white">
+
+            <button
+              type="submit"
+              className="rounded-lg bg-[#E16000] px-4 py-2 text-sm font-medium text-white"
+            >
               Take slot
             </button>
           </div>
@@ -582,11 +683,30 @@ export default function MeetingsPage() {
       <FormModal open={detailOpen} title="Meeting detail" onClose={() => setDetailOpen(false)}>
         {selectedMeeting && (
           <div className="space-y-5 text-sm text-gray-700">
-            <div>
-              <p className="text-lg font-semibold text-gray-900">{selectedMeeting.title}</p>
-              <p className="text-gray-500">
-                {selectedMeeting.meeting_type_name} — {selectedMeeting.meeting_date} — {selectedMeeting.start_time}
-              </p>
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+              <div>
+                <p className="text-lg font-semibold text-gray-900">{selectedMeeting.title}</p>
+                <p className="text-gray-500">
+                  {selectedMeeting.meeting_type_name} — {selectedMeeting.meeting_date} —{" "}
+                  {selectedMeeting.start_time}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => openEditMeeting(selectedMeeting)}
+                  className="rounded-lg border border-gray-300 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                >
+                  Edit
+                </button>
+
+                <button
+                  onClick={() => handleDeleteMeeting(selectedMeeting)}
+                  className="rounded-lg border border-red-300 px-3 py-1 text-xs text-red-700 hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
 
             <div className="space-y-3">

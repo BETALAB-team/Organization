@@ -438,6 +438,23 @@ export async function createMeeting(payload: MeetingPayload): Promise<Meeting> {
     body: JSON.stringify(payload),
   });
 }
+export async function updateMeeting(
+  meetingId: string,
+  payload: MeetingPayload
+): Promise<Meeting> {
+  return request<Meeting>(`/meetings/${meetingId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteMeeting(
+  meetingId: string
+): Promise<{ status: string }> {
+  return request<{ status: string }>(`/meetings/${meetingId}`, {
+    method: "DELETE",
+  });
+}
 
 export async function createMeetingSlot(
   payload: MeetingSlotPayload
