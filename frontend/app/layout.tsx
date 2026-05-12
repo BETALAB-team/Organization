@@ -31,7 +31,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <div className="min-h-screen bg-gray-100">
-          <aside className="fixed inset-y-0 left-0 flex w-64 flex-col bg-[#E16000] text-white">
+          <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-64 lg:flex-col lg:bg-[#E16000] lg:text-white">
             <div className="flex h-16 items-center px-6 text-xl font-bold">
               BETALAB
             </div>
@@ -53,17 +53,45 @@ export default function RootLayout({
             </div>
           </aside>
 
-          <div className="pl-64">
-            <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-white px-8">
-              <div>
-                <p className="text-sm text-gray-500">Research Group Platform</p>
+          <div className="lg:pl-64">
+            <header className="sticky top-0 z-10 border-b bg-white">
+              <div className="flex min-h-16 items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+                <div>
+                  <p className="text-base font-bold text-[#E16000] lg:hidden">
+                    BETALAB
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Research Group Platform
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <ProfileSelector />
+                  <div className="hidden sm:block">
+                    <LogoutButton />
+                  </div>
+                </div>
               </div>
 
-              <ProfileSelector />
+              <nav className="flex gap-2 overflow-x-auto border-t px-4 py-2 lg:hidden">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+
+                <div className="shrink-0 sm:hidden">
+                  <LogoutButton />
+                </div>
+              </nav>
             </header>
 
-            <main className="p-8">
-              <div className="rounded-xl bg-white p-6 shadow-sm">
+            <main className="p-3 sm:p-5 lg:p-8">
+              <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
                 {children}
               </div>
             </main>
