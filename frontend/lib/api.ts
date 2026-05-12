@@ -4,9 +4,21 @@ async function request<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (typeof window !== "undefined") {
+    const selectedPersonId = localStorage.getItem("selectedPersonId");
+
+    if (selectedPersonId) {
+      headers["X-Person-Id"] = selectedPersonId;
+    }
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
-      "Content-Type": "application/json",
+      ...headers,
       ...(options.headers || {}),
     },
     ...options,
@@ -22,7 +34,6 @@ async function request<T>(
 
   return response.json();
 }
-
 export type Role = {
   id: string;
   name: string;
