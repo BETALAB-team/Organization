@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
 import ProfileSelector from "../components/ProfileSelector";
+import LogoutButton from "@/components/LogoutButton";
+
 
 export const metadata: Metadata = {
   title: "BETALAB Platform",
@@ -19,6 +21,8 @@ const navigation = [
   { name: "Admin", href: "/admin" },
   { name: "Insights", href: "/insights"},
   { name: "Logs", href: "/logs" },
+
+  <LogoutButton />
 ];
 
 export default function RootLayout({
