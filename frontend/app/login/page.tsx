@@ -4,14 +4,14 @@ import { useState } from "react";
 
 export default function LoginPage() {
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function submitLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
+    setError("");
     setLoading(true);
-    setMessage("Checking password...");
 
     try {
       const res = await fetch("/api/login", {
@@ -22,18 +22,15 @@ export default function LoginPage() {
         body: JSON.stringify({ password }),
       });
 
-      const text = await res.text();
-
       if (!res.ok) {
-        setMessage(`Login failed. Status: ${res.status}. Response: ${text}`);
+        setError("Wrong password. Please try again.");
         setLoading(false);
         return;
       }
 
-      setMessage("Login successful. Redirecting...");
       window.location.href = "/";
-    } catch (error) {
-      setMessage(`Request failed: ${String(error)}`);
+    } catch {
+      setError("Something went wrong. Please try again.");
       setLoading(false);
     }
   }
@@ -60,6 +57,12 @@ export default function LoginPage() {
           className="mt-6 w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-300"
         />
 
+        {error && (
+          <p className="mt-3 text-sm text-red-600">
+            {error}
+          </p>
+        )}
+
         <button
           type="submit"
           disabled={loading}
@@ -67,12 +70,6 @@ export default function LoginPage() {
         >
           {loading ? "Checking..." : "Enter"}
         </button>
-
-        {message && (
-          <pre className="mt-4 whitespace-pre-wrap rounded-lg bg-slate-100 p-3 text-xs text-slate-700">
-            {message}
-          </pre>
-        )}
       </form>
     </main>
   );
