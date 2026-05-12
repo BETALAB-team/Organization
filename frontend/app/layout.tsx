@@ -4,7 +4,6 @@ import Link from "next/link";
 import ProfileSelector from "../components/ProfileSelector";
 import LogoutButton from "@/components/LogoutButton";
 
-
 export const metadata: Metadata = {
   title: "BETALAB Platform",
   description: "Research group management platform",
@@ -19,10 +18,8 @@ const navigation = [
   { name: "Meetings", href: "/meetings" },
   { name: "Master Theses", href: "/master-theses" },
   { name: "Admin", href: "/admin" },
-  { name: "Insights", href: "/insights"},
+  { name: "Insights", href: "/insights" },
   { name: "Logs", href: "/logs" },
-
-  <LogoutButton />
 ];
 
 export default function RootLayout({
@@ -34,12 +31,12 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <div className="min-h-screen bg-gray-100">
-          <aside className="fixed inset-y-0 left-0 w-64 bg-[#E16000] text-white">
+          <aside className="fixed inset-y-0 left-0 flex w-64 flex-col bg-[#E16000] text-white">
             <div className="flex h-16 items-center px-6 text-xl font-bold">
               BETALAB
             </div>
 
-            <nav className="mt-4 space-y-1 px-3">
+            <nav className="mt-4 flex-1 space-y-1 px-3">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
@@ -50,6 +47,10 @@ export default function RootLayout({
                 </Link>
               ))}
             </nav>
+
+            <div className="border-t border-white/20 p-3">
+              <LogoutButton />
+            </div>
           </aside>
 
           <div className="pl-64">
