@@ -1,5 +1,4 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://betalab-raci.onrender.com/api";
+const API_BASE_URL = "https://betalab-raci.onrender.com/api";
 
 async function request<T>(
   path: string,
